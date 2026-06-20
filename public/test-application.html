@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test Job Application — CV Creator E2E</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+    label { display: block; margin: 12px 0 4px; font-weight: 600; }
+    input, textarea { width: 100%; padding: 8px; font-size: 14px; box-sizing: border-box; }
+    h1 { font-size: 22px; }
+  </style>
+</head>
+<body>
+  <h1>Apply for: Senior Engineer</h1>
+  <form id="application-form">
+    <label for="firstName">First name</label>
+    <input id="firstName" name="firstName" type="text" placeholder="First name" />
+
+    <label for="lastName">Last name</label>
+    <input id="lastName" name="lastName" type="text" placeholder="Last name" />
+
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" placeholder="Email address" />
+
+    <label for="phone">Phone</label>
+    <input id="phone" name="phone" type="tel" placeholder="Phone" />
+
+    <label for="location">Location</label>
+    <input id="location" name="location" type="text" placeholder="City, Country" />
+
+    <label for="linkedin">LinkedIn URL</label>
+    <input id="linkedin" name="linkedin" type="url" placeholder="LinkedIn profile" />
+
+    <label for="coverLetter">Cover letter</label>
+    <textarea id="coverLetter" name="coverLetter" rows="6" placeholder="Cover letter"></textarea>
+
+    <label for="resume">Resume / CV</label>
+    <input id="resume" name="resume" type="file" />
+
+    <button type="submit">Submit application</button>
+  </form>
+</body>
+</html>

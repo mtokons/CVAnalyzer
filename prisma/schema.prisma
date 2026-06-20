@@ -1,0 +1,262 @@
+// CV Creator - Prisma Schema
+// Supports multi-source profile aggregation, AI-generated CVs, and job application tracking
+
+generator client {
+  provider      = "prisma-client-js"
+  // Include the Linux/OpenSSL target used by Cloud Run (Firebase App Hosting)
+  // alongside the local native target so the engine resolves in both places.
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── User & Auth ──────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile       Profile?
+  jobs          Job[]
+  cvDocuments   CVDocument[]
+  coverLetters  CoverLetter[]
+  applications  Application[]
+  credentials   PortalCredential[]
+  sessions      Session[]
+  accounts      Account[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Profile (Aggregated Master Profile) ─────────────────────────────────────
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fullName    String?
+  email       String?
+  phone       String?
+  location    String?
+  website     String?
+  linkedin    String?
+  github      String?
+  summary     String?  @db.Text
+
+  experience     Json  @default("[]")
+  education      Json  @default("[]")
+  skills         Json  @default("[]")
+  certifications Json  @default("[]")
+  languages      Json  @default("[]")
+  projects       Json  @default("[]")
+  awards         Json  @default("[]")
+  publications   Json  @default("[]")
+
+  sources     ProfileSource[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── Profile Source ───────────────────────────────────────────────────────────
+
+model ProfileSource {
+  id          String      @id @default(cuid())
+  profileId   String
+  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  sourceType  SourceType
+  sourceName  String
+  rawContent  String      @db.Text
+  parsedData  Json        @default("{}")
+  fileUrl     String?
+  status      ParseStatus @default(PENDING)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum SourceType {
+  LINKEDIN
+  MONSTER
+  PDF_UPLOAD
+  WORD_UPLOAD
+  TEXT_UPLOAD
+  MANUAL
+  URL
+}
+
+enum ParseStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ─── Job Posting ──────────────────────────────────────────────────────────────
+
+model Job {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title           String
+  company         String
+  location        String?
+  jobType         String?
+  salary          String?
+  description     String    @db.Text
+  requirements    Json      @default("[]")
+  keywords        Json      @default("[]")
+  portalUrl       String?
+  portalName      String?
+  applicationUrl  String?
+
+  atsScore        Int?
+  matchedSkills   Json      @default("[]")
+  missingSkills   Json      @default("[]")
+
+  status          JobStatus @default(SAVED)
+  notes           String?   @db.Text
+  appliedAt       DateTime?
+
+  cvDocuments     CVDocument[]
+  coverLetters    CoverLetter[]
+  application     Application?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+enum JobStatus {
+  SAVED
+  APPLIED
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+// ─── Generated CV ─────────────────────────────────────────────────────────────
+
+model CVDocument {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId       String?
+  job         Job?      @relation(fields: [jobId], references: [id])
+
+  title       String
+  template    String    @default("modern")
+  content     Json
+  htmlContent String?   @db.Text
+  pdfUrl      String?
+  aiModel     String?
+  prompt      String?   @db.Text
+  version     Int       @default(1)
+  isActive    Boolean   @default(true)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── Cover Letter ─────────────────────────────────────────────────────────────
+
+model CoverLetter {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId       String?
+  job         Job?      @relation(fields: [jobId], references: [id])
+
+  title       String
+  content     String    @db.Text
+  tone        String    @default("professional")
+  aiModel     String?
+  version     Int       @default(1)
+  isActive    Boolean   @default(true)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── Job Application ──────────────────────────────────────────────────────────
+
+model Application {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId         String      @unique
+  job           Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  formData      Json        @default("{}")
+  fillStatus    FillStatus  @default(PENDING)
+  fillLog       Json        @default("[]")
+  screenshotUrl String?
+  verifiedAt    DateTime?
+  submittedAt   DateTime?
+  notes         String?     @db.Text
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+enum FillStatus {
+  PENDING
+  FILLING
+  AWAITING_REVIEW
+  APPROVED
+  SUBMITTED
+  FAILED
+}
+
+// ─── Portal Credentials ───────────────────────────────────────────────────────
+
+model PortalCredential {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  portalName  String
+  portalUrl   String
+  username    String
+  password    String
+  extraFields Json      @default("{}")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, portalName])
+}

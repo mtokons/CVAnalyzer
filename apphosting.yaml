@@ -1,0 +1,61 @@
+# Firebase App Hosting configuration
+# Docs: https://firebase.google.com/docs/app-hosting/configure
+#
+# This runs the Next.js app (SSR + API routes) on Cloud Run. Secrets are stored
+# in Google Secret Manager and referenced by name below — never commit real
+# secret values to git. Create them with:
+#   firebase apphosting:secrets:set DATABASE_URL
+#   firebase apphosting:secrets:set ENCRYPTION_KEY
+#   firebase apphosting:secrets:set GEMINI_API_KEY   # optional (app has a fallback)
+
+runConfig:
+  # Free-tier friendly sizing. Cloud Run scales to zero when idle.
+  cpu: 1
+  memoryMiB: 512
+  minInstances: 0
+  maxInstances: 2
+  concurrency: 80
+  # AI + parsing can take a little time; allow generous request timeout.
+  timeoutSeconds: 120
+
+env:
+  # ── Plain (non-secret) runtime configuration ──────────────────────────────
+  - variable: NODE_ENV
+    value: production
+    availability:
+      - RUNTIME
+
+  # Playwright browser automation cannot run on serverless/Cloud Run, so the
+  # auto-fill feature degrades gracefully with a clear message. Everything else
+  # (profiles, parsing, jobs, ATS, CV & cover-letter generation) works fully.
+  - variable: DISABLE_AUTOMATION
+    value: "true"
+    availability:
+      - RUNTIME
+
+  # App filesystem is read-only except /tmp — store any uploaded file copies there.
+  - variable: UPLOAD_DIR
+    value: /tmp/uploads
+    availability:
+      - RUNTIME
+
+  # ── Secrets (stored in Google Secret Manager, referenced by name) ─────────
+  # DATABASE_URL is also needed at BUILD because the Prisma client is imported
+  # while Next.js collects routes.
+  - variable: DATABASE_URL
+    secret: DATABASE_URL
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: ENCRYPTION_KEY
+    secret: ENCRYPTION_KEY
+    availability:
+      - RUNTIME
+
+  # Optional: drop in a real Gemini key to use the live model. Without it the
+  # app uses its deterministic local AI fallback and still works end to end.
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
+    availability:
+      - RUNTIME
