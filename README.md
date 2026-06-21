@@ -125,7 +125,7 @@ Open **http://localhost:3000**.
 
 ## 🤖 AI Provider Notes
 
-**Gemini Pro** is the default engine (`gemini-1.5-pro`). It powers:
+**Gemini** is the default engine (`gemini-flash-latest`). It powers:
 - Profile extraction from raw documents
 - Job description analysis & keyword extraction
 - ATS match scoring

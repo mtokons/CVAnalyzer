@@ -142,7 +142,7 @@ class AIService {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
       this.gemini = new GoogleGenerativeAI(apiKey);
-      this.model = this.gemini.getGenerativeModel({ model: "gemini-1.5-pro" });
+      this.model = this.gemini.getGenerativeModel({ model: "gemini-flash-latest" });
     }
     return this.model;
   }
@@ -233,13 +233,13 @@ ${rawText}
 
 Return ONLY the JSON object, no markdown, no explanation.`;
 
-    const response = await this.generateWithGemini(prompt);
     try {
+      const response = await this.generateWithGemini(prompt);
       const cleaned = response.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       return JSON.parse(cleaned) as ProfileData;
-    } catch {
-      console.error("Failed to parse profile JSON:", response);
-      return {};
+    } catch (e) {
+      console.warn("Gemini extractProfile failed — using local fallback:", e instanceof Error ? e.message : e);
+      return fallbackExtractProfile(rawText);
     }
   }
 
@@ -284,22 +284,13 @@ ${jobText}
 
 Return ONLY valid JSON.`;
 
-    const response = await this.generateWithGemini(prompt);
     try {
+      const response = await this.generateWithGemini(prompt);
       const cleaned = response.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       return JSON.parse(cleaned);
-    } catch {
-      return {
-        title: "",
-        company: "",
-        location: "",
-        jobType: "",
-        salary: "",
-        requirements: [],
-        keywords: [],
-        niceToHave: [],
-        culture: [],
-      };
+    } catch (e) {
+      console.warn("Gemini analyzeJob failed — using local fallback:", e instanceof Error ? e.message : e);
+      return fallbackAnalyzeJob(jobText);
     }
   }
 
@@ -333,12 +324,13 @@ Return JSON:
 
 Return ONLY valid JSON.`;
 
-    const response = await this.generateWithGemini(prompt);
     try {
+      const response = await this.generateWithGemini(prompt);
       const cleaned = response.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       return JSON.parse(cleaned);
-    } catch {
-      return { score: 0, matchedSkills: [], missingSkills: [], suggestions: [] };
+    } catch (e) {
+      console.warn("Gemini ATS score failed — using local fallback:", e instanceof Error ? e.message : e);
+      return fallbackATSScore(profile, job);
     }
   }
 
@@ -413,14 +405,14 @@ Return a JSON object with the SAME structure as the input profile but with tailo
 
 Return ONLY valid JSON.`;
 
-    const tailoredContent = await this.generateWithGemini(prompt);
-    let parsedContent: ProfileData = profile;
+    let parsedContent: ProfileData = fallbackTailorProfile(profile, job);
 
     try {
+      const tailoredContent = await this.generateWithGemini(prompt);
       const cleaned = tailoredContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       parsedContent = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse CV JSON");
+    } catch (e) {
+      console.warn("Gemini CV generation failed — using local fallback:", e instanceof Error ? e.message : e);
     }
 
     const htmlContent = this.generateCVHTML(parsedContent, job);
@@ -487,8 +479,13 @@ RULES:
 
 Return the cover letter as clean HTML with <p> tags. No markdown.`;
 
-    const content = await this.generateWithGemini(prompt);
-    return { content, tone };
+    try {
+      const content = await this.generateWithGemini(prompt);
+      return { content, tone };
+    } catch (e) {
+      console.warn("Gemini cover letter failed — using local fallback:", e instanceof Error ? e.message : e);
+      return { content: fallbackCoverLetter(profile, job, tone), tone };
+    }
   }
 
   // ─── Profile Merging ─────────────────────────────────────────────────────
@@ -518,16 +515,13 @@ ${sources.map((s, i) => `SOURCE ${i + 1}:\n${JSON.stringify(s, null, 2)}`).join(
 Return a single merged profile as valid JSON with the same structure as the input sources.
 Return ONLY valid JSON.`;
 
-    const response = await this.generateWithGemini(prompt);
     try {
+      const response = await this.generateWithGemini(prompt);
       const cleaned = response.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       return JSON.parse(cleaned);
-    } catch {
-      // Fallback: return first source with skills merged
-      const merged = { ...sources[0] };
-      const allSkills = new Set(sources.flatMap((s) => s.skills || []));
-      merged.skills = Array.from(allSkills);
-      return merged;
+    } catch (e) {
+      console.warn("Gemini merge failed — using local fallback:", e instanceof Error ? e.message : e);
+      return fallbackMergeProfiles(sources);
     }
   }
 
