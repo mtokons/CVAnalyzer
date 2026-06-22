@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       matchedSkills: job.matchedSkills as unknown as string[],
       missingSkills: job.missingSkills as unknown as string[],
       keywords: job.keywords as unknown as string[],
-    });
+    }, template);
 
     // Save the generated CV
     const cvDoc = await prisma.cVDocument.create({

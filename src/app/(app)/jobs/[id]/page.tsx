@@ -57,6 +57,7 @@ export default function JobDetailPage() {
   const [generatingCL, setGeneratingCL] = useState(false);
   const [applying, setApplying] = useState(false);
   const [tone, setTone] = useState("professional");
+  const [template, setTemplate] = useState("modern");
   const [previewCV, setPreviewCV] = useState<string | null>(null);
 
   const loadJob = useCallback(async () => {
@@ -82,7 +83,7 @@ export default function JobDetailPage() {
       const res = await fetch("/api/cv/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId }),
+        body: JSON.stringify({ jobId, template }),
       });
       const data = await res.json();
       if (data.success) {
@@ -229,10 +230,22 @@ export default function JobDetailPage() {
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                 <FileText size={18} className="text-brand-400" /> Tailored CV
               </h2>
-              <button onClick={generateCV} disabled={generatingCV} className="btn-primary !py-2 !px-4 text-sm">
-                {generatingCV ? <LoadingSpinner /> : <Sparkles size={16} />}
-                {job.cvDocuments.length > 0 ? "Regenerate" : "Generate CV"}
-              </button>
+              <div className="flex items-center gap-2">
+                <select
+                  value={template}
+                  onChange={(e) => setTemplate(e.target.value)}
+                  className="input !py-2 !px-3 text-sm bg-slate-800 border-slate-700"
+                  aria-label="CV template"
+                >
+                  <option value="modern">Modern</option>
+                  <option value="classic">Classic</option>
+                  <option value="minimal">Minimal</option>
+                </select>
+                <button onClick={generateCV} disabled={generatingCV} className="btn-primary !py-2 !px-4 text-sm">
+                  {generatingCV ? <LoadingSpinner /> : <Sparkles size={16} />}
+                  {job.cvDocuments.length > 0 ? "Regenerate" : "Generate CV"}
+                </button>
+              </div>
             </div>
             {job.cvDocuments.length === 0 ? (
               <p className="text-sm text-slate-500">
