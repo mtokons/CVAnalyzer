@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Mail, Building2, Copy, Check } from "lucide-react";
+import { Mail, Building2, Copy, Check, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import { SkeletonCard } from "@/components/ui/Loading";
 
@@ -79,6 +79,13 @@ export default function CoverLettersPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="badge bg-brand-600/20 text-brand-300 capitalize">{letter.tone}</span>
+                  <a
+                    href={`/api/cover-letter/${letter.id}/pdf`}
+                    className="btn-ghost !p-2 border border-slate-700 flex items-center"
+                    title="Download PDF"
+                  >
+                    <Download size={16} />
+                  </a>
                   <button
                     onClick={() => copyText(letter.id, letter.content)}
                     className="btn-ghost !p-2 border border-slate-700"

@@ -158,16 +158,6 @@ export default function JobDetailPage() {
     router.push("/jobs");
   };
 
-  const downloadCV = (html: string, title: string) => {
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${title.replace(/[^a-z0-9]/gi, "_")}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -264,13 +254,13 @@ export default function JobDetailPage() {
                       >
                         <Eye size={16} />
                       </button>
-                      <button
-                        onClick={() => downloadCV(cv.htmlContent, cv.title)}
-                        className="btn-ghost !p-2"
-                        title="Download"
+                      <a
+                        href={`/api/cv/${cv.id}/pdf`}
+                        className="btn-ghost !p-2 flex items-center"
+                        title="Download PDF"
                       >
                         <Download size={16} />
-                      </button>
+                      </a>
                     </div>
                   </div>
                 ))}

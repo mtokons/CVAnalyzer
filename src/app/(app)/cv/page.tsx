@@ -28,16 +28,6 @@ export default function CVListPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const download = (html: string, title: string) => {
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${title.replace(/[^a-z0-9]/gi, "_")}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div>
       <div className="mb-8">
@@ -85,9 +75,13 @@ export default function CVListPage() {
                 <button onClick={() => setPreview(cv.htmlContent)} className="btn-secondary !py-2 flex-1 text-sm">
                   <Eye size={16} /> Preview
                 </button>
-                <button onClick={() => download(cv.htmlContent, cv.title)} className="btn-ghost !p-2.5 border border-slate-700">
+                <a
+                  href={`/api/cv/${cv.id}/pdf`}
+                  className="btn-ghost !p-2.5 border border-slate-700 flex items-center"
+                  title="Download PDF"
+                >
                   <Download size={16} />
-                </button>
+                </a>
               </div>
             </motion.div>
           ))}
