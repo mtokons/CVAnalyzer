@@ -3,9 +3,10 @@
 
 generator client {
   provider      = "prisma-client-js"
-  // Include the Linux/OpenSSL target used by Cloud Run (Firebase App Hosting)
-  // alongside the local native target so the engine resolves in both places.
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  // Include the Linux/OpenSSL targets used by Cloud Run (Firebase App Hosting)
+  // and Vercel serverless (Amazon Linux), plus the local native target so the
+  // engine resolves in every environment.
+  binaryTargets = ["native", "debian-openssl-3.0.x", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
