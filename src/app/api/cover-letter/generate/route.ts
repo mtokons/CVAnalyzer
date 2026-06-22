@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserId } from "@/lib/session";
 import { aiService, type WorkExperience } from "@/services/ai.service";
 
 export const maxDuration = 120;
@@ -7,7 +8,8 @@ export const maxDuration = 120;
 // POST /api/cover-letter/generate
 export async function POST(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json();
     const { jobId, tone = "professional" } = body;
 
@@ -71,7 +73,8 @@ export async function POST(req: NextRequest) {
 // GET /api/cover-letter/generate — list all cover letters
 export async function GET(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const letters = await prisma.coverLetter.findMany({
       where: { userId },
       include: { job: { select: { title: true, company: true } } },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserId } from "@/lib/session";
 import { SourceType } from "@prisma/client";
 import { documentParser } from "@/services/document-parser.service";
 import { aiService, type WorkExperience, type Education } from "@/services/ai.service";
@@ -13,7 +14,8 @@ export const maxDuration = 60;
 // POST /api/profile/upload — upload and parse a document (PDF, DOCX, TXT)
 export async function POST(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 

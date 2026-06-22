@@ -59,3 +59,11 @@ env:
     secret: GEMINI_API_KEY
     availability:
       - RUNTIME
+
+  # Auth.js (NextAuth v5) session signing secret. Required to sign/verify the
+  # JWT session cookie. Needed at BUILD (middleware is compiled) and RUNTIME.
+  - variable: AUTH_SECRET
+    secret: AUTH_SECRET
+    availability:
+      - BUILD
+      - RUNTIME

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserId } from "@/lib/session";
 import { portalAutomation } from "@/services/portal-automation.service";
 import { encrypt, decrypt } from "@/lib/encryption";
 
@@ -8,7 +9,8 @@ export const maxDuration = 300; // 5 minutes for automation
 // POST /api/automation/fill — auto-fill a job application form
 export async function POST(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json();
     const { jobId, portalCredentialId, useStoredCredentials = false } = body;
 

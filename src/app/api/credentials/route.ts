@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserId } from "@/lib/session";
 import { encrypt } from "@/lib/encryption";
 import { z } from "zod";
 
@@ -13,7 +14,8 @@ const credentialSchema = z.object({
 // GET /api/credentials — list stored portal credentials (names only, no passwords)
 export async function GET(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const creds = await prisma.portalCredential.findMany({
       where: { userId },
       select: { id: true, portalName: true, portalUrl: true, username: true, createdAt: true },
@@ -28,7 +30,8 @@ export async function GET(req: NextRequest) {
 // POST /api/credentials — store portal credentials (encrypted)
 export async function POST(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json();
 
     const parsed = credentialSchema.safeParse(body);
@@ -55,7 +58,8 @@ export async function POST(req: NextRequest) {
 // DELETE /api/credentials/[id]
 export async function DELETE(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserId } from "@/lib/session";
 import { jobScraper } from "@/services/job-scraper.service";
 import { aiService, type WorkExperience } from "@/services/ai.service";
 
@@ -8,7 +9,8 @@ export const maxDuration = 60;
 // GET /api/jobs — list all saved jobs
 export async function GET(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
 
@@ -35,7 +37,8 @@ export async function GET(req: NextRequest) {
 // POST /api/jobs — add a new job (from URL or manual text)
 export async function POST(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json();
     const { url, text, manual } = body;
 

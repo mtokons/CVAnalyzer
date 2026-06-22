@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserId } from "@/lib/session";
 import { SourceType } from "@prisma/client";
 import { documentParser } from "@/services/document-parser.service";
 import { aiService, type WorkExperience, type Education } from "@/services/ai.service";
@@ -7,8 +8,8 @@ import { aiService, type WorkExperience, type Education } from "@/services/ai.se
 // GET /api/profile — get the user's aggregated profile
 export async function GET() {
   try {
-    // TODO: Replace "demo-user" with actual session user ID once auth is configured
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     let profile = await prisma.profile.findUnique({
       where: { userId },
@@ -16,15 +17,10 @@ export async function GET() {
     });
 
     if (!profile) {
-      // Auto-create a blank profile for new users
+      // Auto-create a blank profile for the authenticated user
       profile = await prisma.profile.create({
         data: {
-          user: {
-            connectOrCreate: {
-              where: { id: userId },
-              create: { id: userId, email: "demo@example.com", name: "Demo User" },
-            },
-          },
+          user: { connect: { id: userId } },
         },
         include: { sources: true },
       });
@@ -40,7 +36,8 @@ export async function GET() {
 // PUT /api/profile — update profile fields manually
 export async function PUT(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json();
 
     const profile = await prisma.profile.upsert({
@@ -100,7 +97,8 @@ export async function PUT(req: NextRequest) {
 // POST /api/profile — import from URL (LinkedIn, Monster, etc.)
 export async function POST(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json();
     const { url } = body;
     const sourceType: SourceType = Object.values(SourceType).includes(body.sourceType)

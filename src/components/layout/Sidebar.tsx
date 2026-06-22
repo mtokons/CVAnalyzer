@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -13,6 +14,7 @@ import {
   Settings,
   ChevronRight,
   Sparkles,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,8 +28,11 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ user }: { user?: { name: string | null; email: string | null } }) {
   const pathname = usePathname();
+
+  const displayName = user?.name || user?.email?.split("@")[0] || "Account";
+  const initial = (user?.name || user?.email || "?").charAt(0).toUpperCase();
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-slate-900 border-r border-slate-800">
@@ -75,15 +80,26 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Bottom badge */}
-      <div className="px-4 py-4 border-t border-slate-800">
-        <div className="glass-card px-4 py-3">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs font-semibold text-slate-300">AI Ready</span>
+      {/* User + sign out */}
+      <div className="px-3 py-4 border-t border-slate-800">
+        <div className="flex items-center gap-3 px-3 py-2">
+          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-semibold text-white">
+            {initial}
           </div>
-          <p className="text-xs text-slate-500">Gemini Pro connected</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-white">{displayName}</p>
+            {user?.email && (
+              <p className="truncate text-xs text-slate-500">{user.email}</p>
+            )}
+          </div>
         </div>
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition-all duration-150 hover:bg-white/5 hover:text-white"
+        >
+          <LogOut className="h-4 w-4" size={16} />
+          <span>Sign out</span>
+        </button>
       </div>
     </aside>
   );

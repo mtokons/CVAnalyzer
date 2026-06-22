@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserId } from "@/lib/session";
 import {
   aiService,
   type WorkExperience,
@@ -14,7 +15,8 @@ export const maxDuration = 120;
 // POST /api/cv/generate — generate a tailored CV for a job
 export async function POST(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json();
     const { jobId, template = "modern" } = body;
 
@@ -107,7 +109,8 @@ export async function POST(req: NextRequest) {
 // GET /api/cv/generate — list all generated CVs
 export async function GET(req: NextRequest) {
   try {
-    const userId = "demo-user";
+    const userId = await getUserId();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const cvs = await prisma.cVDocument.findMany({
       where: { userId },
       include: { job: { select: { title: true, company: true } } },
