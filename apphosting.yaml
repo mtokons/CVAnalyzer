@@ -60,13 +60,6 @@ env:
     availability:
       - RUNTIME
 
-  # Anthropic Claude — preferred provider for CV analysis & generation when set.
-  # Create with: firebase apphosting:secrets:set ANTHROPIC_API_KEY
-  - variable: ANTHROPIC_API_KEY
-    secret: ANTHROPIC_API_KEY
-    availability:
-      - RUNTIME
-
   # Auth.js (NextAuth v5) session signing secret. Required to sign/verify the
   # JWT session cookie. Needed at BUILD (middleware is compiled) and RUNTIME.
   - variable: AUTH_SECRET
