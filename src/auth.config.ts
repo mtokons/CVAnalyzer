@@ -8,6 +8,7 @@ const PROTECTED_PREFIXES = [
   "/cover-letters",
   "/apply",
   "/settings",
+  "/admin",
 ];
 
 /**
@@ -30,12 +31,17 @@ export const authConfig = {
       return true;
     },
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        token.id = user.id;
+        // `role` is added to the user object by the credentials authorize callback.
+        token.role = (user as { role?: string }).role ?? "USER";
+      }
       return token;
     },
     async session({ session, token }) {
       if (token.id && session.user) {
         session.user.id = token.id as string;
+        session.user.role = (token.role as string) ?? "USER";
       }
       return session;
     },

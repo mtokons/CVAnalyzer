@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Sparkles,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,11 +29,21 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar({ user }: { user?: { name: string | null; email: string | null } }) {
+export function Sidebar({
+  user,
+  isAdmin,
+}: {
+  user?: { name: string | null; email: string | null };
+  isAdmin?: boolean;
+}) {
   const pathname = usePathname();
 
   const displayName = user?.name || user?.email?.split("@")[0] || "Account";
   const initial = (user?.name || user?.email || "?").charAt(0).toUpperCase();
+
+  const items = isAdmin
+    ? [...navItems, { href: "/admin", label: "Admin", icon: ShieldCheck }]
+    : navItems;
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-slate-900 border-r border-slate-800">
@@ -49,7 +60,7 @@ export function Sidebar({ user }: { user?: { name: string | null; email: string 
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
