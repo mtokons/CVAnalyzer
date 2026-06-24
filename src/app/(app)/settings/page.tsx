@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ portalName: "", portalUrl: "", username: "", password: "" });
+  const [ai, setAi] = useState<{ engine: string; model: string } | null>(null);
 
   const load = async () => {
     try {
@@ -34,6 +35,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     load();
+    fetch("/api/ai/status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setAi(d))
+      .catch(() => {});
   }, []);
 
   const saveCredential = async () => {
@@ -85,28 +90,49 @@ export default function SettingsPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between p-4 rounded-xl bg-slate-800/50 border border-slate-700">
             <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
+              <div className={`w-2.5 h-2.5 rounded-full ${ai?.engine === "claude" ? "bg-green-400 animate-pulse" : "bg-slate-500"}`} />
               <div>
-                <p className="font-medium text-white">Google Gemini Pro</p>
-                <p className="text-xs text-slate-500">Primary — CV generation & analysis</p>
+                <p className="font-medium text-white">Anthropic Claude</p>
+                <p className="text-xs text-slate-500">
+                  {ai?.engine === "claude" ? `Primary — ${ai.model}` : "Set ANTHROPIC_API_KEY in .env to enable"}
+                </p>
               </div>
             </div>
-            <span className="badge bg-green-500/15 text-green-400">Active</span>
+            <span className={`badge ${ai?.engine === "claude" ? "bg-green-500/15 text-green-400" : "bg-slate-700 text-slate-400"}`}>
+              {ai?.engine === "claude" ? "Active" : "Optional"}
+            </span>
           </div>
           <div className="flex items-center justify-between p-4 rounded-xl bg-slate-800/50 border border-slate-700">
             <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-slate-500" />
+              <div className={`w-2.5 h-2.5 rounded-full ${ai?.engine === "gemini" ? "bg-green-400 animate-pulse" : "bg-slate-500"}`} />
               <div>
-                <p className="font-medium text-white">GitHub Copilot</p>
-                <p className="text-xs text-slate-500">Configure GITHUB_COPILOT_TOKEN in .env</p>
+                <p className="font-medium text-white">Google Gemini</p>
+                <p className="text-xs text-slate-500">
+                  {ai?.engine === "gemini" ? `Primary — ${ai.model}` : "Fallback — set GEMINI_API_KEY in .env"}
+                </p>
               </div>
             </div>
-            <span className="badge bg-slate-700 text-slate-400">Optional</span>
+            <span className={`badge ${ai?.engine === "gemini" ? "bg-green-500/15 text-green-400" : "bg-slate-700 text-slate-400"}`}>
+              {ai?.engine === "gemini" ? "Active" : "Optional"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className={`w-2.5 h-2.5 rounded-full ${ai?.engine === "fallback" || !ai ? "bg-amber-400" : "bg-slate-500"}`} />
+              <div>
+                <p className="font-medium text-white">Local Fallback</p>
+                <p className="text-xs text-slate-500">Deterministic generation when no AI key is configured</p>
+              </div>
+            </div>
+            <span className={`badge ${ai?.engine === "fallback" ? "bg-amber-500/15 text-amber-400" : "bg-slate-700 text-slate-400"}`}>
+              {ai?.engine === "fallback" ? "Active" : "Standby"}
+            </span>
           </div>
         </div>
         <p className="text-xs text-slate-500 mt-3">
-          Set your API keys in the <code className="text-brand-400">.env</code> file. Restart the
-          server after changes.
+          Claude is preferred for CV analysis when configured. Set your API keys in the{" "}
+          <code className="text-brand-400">.env</code> file (or hosting secrets) and restart the
+          server. Force a provider with <code className="text-brand-400">AI_PROVIDER=claude</code>.
         </p>
       </motion.div>
 

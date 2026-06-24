@@ -1,9 +1,16 @@
 /**
- * AI Service — Orchestrates Gemini Pro and GitHub Copilot for CV generation,
- * job analysis, ATS scoring, and cover letter creation.
+ * AI Service — Orchestrates Anthropic Claude and Google Gemini for CV
+ * generation, job analysis, ATS scoring, and cover letter creation.
+ *
+ * Provider selection (per request):
+ *   1. Claude   — used when ANTHROPIC_API_KEY is set (preferred for analysis)
+ *   2. Gemini   — used when GEMINI_API_KEY is set
+ *   3. Fallback — deterministic local generation when no key is configured
+ * Override the preferred provider with AI_PROVIDER=claude|gemini.
  */
 
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 import {
   fallbackExtractProfile,
   fallbackAnalyzeJob,
@@ -237,6 +244,24 @@ const CV_TEMPLATE_STYLES: Record<string, string> = {
 class AIService {
   private gemini: GoogleGenerativeAI | null = null;
   private model: GenerativeModel | null = null;
+  private anthropic: Anthropic | null = null;
+
+  private static readonly GEMINI_MODEL = "gemini-flash-latest";
+  private get claudeModel(): string {
+    return process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest";
+  }
+
+  /** True when a real Anthropic Claude key is configured. */
+  private hasClaude(): boolean {
+    const key = process.env.ANTHROPIC_API_KEY;
+    return Boolean(key && key.length > 20 && !key.startsWith("your-"));
+  }
+
+  /** True when a real Gemini key is configured. */
+  private hasGemini(): boolean {
+    const key = process.env.GEMINI_API_KEY;
+    return Boolean(key && key.length > 20 && !key.startsWith("your-"));
+  }
 
   /**
    * Returns true when a real, usable AI key is configured. Placeholder values
@@ -244,13 +269,32 @@ class AIService {
    * transparently falls back to deterministic local generation.
    */
   isLive(): boolean {
-    const key = process.env.GEMINI_API_KEY;
-    return Boolean(key && key.length > 20 && !key.startsWith("your-"));
+    return this.hasClaude() || this.hasGemini();
   }
 
-  /** Which engine is currently serving requests — surfaced in the UI/settings. */
-  get engine(): "gemini" | "fallback" {
-    return this.isLive() ? "gemini" : "fallback";
+  /**
+   * Which provider serves a request. Honors an explicit AI_PROVIDER override,
+   * otherwise prefers Claude when available, then Gemini, then local fallback.
+   */
+  get engine(): "claude" | "gemini" | "fallback" {
+    const override = (process.env.AI_PROVIDER || "").toLowerCase();
+    if (override === "claude" && this.hasClaude()) return "claude";
+    if (override === "gemini" && this.hasGemini()) return "gemini";
+    if (this.hasClaude()) return "claude";
+    if (this.hasGemini()) return "gemini";
+    return "fallback";
+  }
+
+  /** Human/DB-friendly identifier of the model that served a request. */
+  get modelName(): string {
+    switch (this.engine) {
+      case "claude":
+        return this.claudeModel;
+      case "gemini":
+        return AIService.GEMINI_MODEL;
+      default:
+        return "local-fallback";
+    }
   }
 
   private getGeminiModel(): GenerativeModel {
@@ -258,9 +302,47 @@ class AIService {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
       this.gemini = new GoogleGenerativeAI(apiKey);
-      this.model = this.gemini.getGenerativeModel({ model: "gemini-flash-latest" });
+      this.model = this.gemini.getGenerativeModel({ model: AIService.GEMINI_MODEL });
     }
     return this.model;
+  }
+
+  private getAnthropic(): Anthropic {
+    if (!this.anthropic) {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured");
+      this.anthropic = new Anthropic({ apiKey });
+    }
+    return this.anthropic;
+  }
+
+  /** Dispatches a prompt to the active provider and returns plain text. */
+  private async generate(prompt: string): Promise<string> {
+    if (this.engine === "claude") {
+      try {
+        return await this.generateWithClaude(prompt);
+      } catch (e) {
+        if (this.hasGemini()) {
+          console.warn("Claude failed — retrying with Gemini:", e instanceof Error ? e.message : e);
+          return this.generateWithGemini(prompt);
+        }
+        throw e;
+      }
+    }
+    return this.generateWithGemini(prompt);
+  }
+
+  private async generateWithClaude(prompt: string): Promise<string> {
+    const client = this.getAnthropic();
+    const message = await client.messages.create({
+      model: this.claudeModel,
+      max_tokens: 4096,
+      messages: [{ role: "user", content: prompt }],
+    });
+    return message.content
+      .filter((block): block is Anthropic.TextBlock => block.type === "text")
+      .map((block) => block.text)
+      .join("");
   }
 
   private async generateWithGemini(prompt: string): Promise<string> {
@@ -350,11 +432,11 @@ ${rawText}
 Return ONLY the JSON object, no markdown, no explanation.`;
 
     try {
-      const response = await this.generateWithGemini(prompt);
+      const response = await this.generate(prompt);
       const cleaned = response.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       return JSON.parse(cleaned) as ProfileData;
     } catch (e) {
-      console.warn("Gemini extractProfile failed — using local fallback:", e instanceof Error ? e.message : e);
+      console.warn("AI extractProfile failed — using local fallback:", e instanceof Error ? e.message : e);
       return fallbackExtractProfile(rawText);
     }
   }
@@ -401,11 +483,11 @@ ${jobText}
 Return ONLY valid JSON.`;
 
     try {
-      const response = await this.generateWithGemini(prompt);
+      const response = await this.generate(prompt);
       const cleaned = response.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       return JSON.parse(cleaned);
     } catch (e) {
-      console.warn("Gemini analyzeJob failed — using local fallback:", e instanceof Error ? e.message : e);
+      console.warn("AI analyzeJob failed — using local fallback:", e instanceof Error ? e.message : e);
       return fallbackAnalyzeJob(jobText);
     }
   }
@@ -441,11 +523,11 @@ Return JSON:
 Return ONLY valid JSON.`;
 
     try {
-      const response = await this.generateWithGemini(prompt);
+      const response = await this.generate(prompt);
       const cleaned = response.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       return JSON.parse(cleaned);
     } catch (e) {
-      console.warn("Gemini ATS score failed — using local fallback:", e instanceof Error ? e.message : e);
+      console.warn("AI ATS score failed — using local fallback:", e instanceof Error ? e.message : e);
       return fallbackATSScore(profile, job);
     }
   }
@@ -525,11 +607,11 @@ Return ONLY valid JSON.`;
     let parsedContent: ProfileData = fallbackTailorProfile(profile, job);
 
     try {
-      const tailoredContent = await this.generateWithGemini(prompt);
+      const tailoredContent = await this.generate(prompt);
       const cleaned = tailoredContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       parsedContent = JSON.parse(cleaned);
     } catch (e) {
-      console.warn("Gemini CV generation failed — using local fallback:", e instanceof Error ? e.message : e);
+      console.warn("AI CV generation failed — using local fallback:", e instanceof Error ? e.message : e);
     }
 
     const htmlContent = this.generateCVHTML(parsedContent, job, template);
@@ -597,10 +679,10 @@ RULES:
 Return the cover letter as clean HTML with <p> tags. No markdown.`;
 
     try {
-      const content = await this.generateWithGemini(prompt);
+      const content = await this.generate(prompt);
       return { content, tone };
     } catch (e) {
-      console.warn("Gemini cover letter failed — using local fallback:", e instanceof Error ? e.message : e);
+      console.warn("AI cover letter failed — using local fallback:", e instanceof Error ? e.message : e);
       return { content: fallbackCoverLetter(profile, job, tone), tone };
     }
   }
@@ -633,11 +715,11 @@ Return a single merged profile as valid JSON with the same structure as the inpu
 Return ONLY valid JSON.`;
 
     try {
-      const response = await this.generateWithGemini(prompt);
+      const response = await this.generate(prompt);
       const cleaned = response.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       return JSON.parse(cleaned);
     } catch (e) {
-      console.warn("Gemini merge failed — using local fallback:", e instanceof Error ? e.message : e);
+      console.warn("AI merge failed — using local fallback:", e instanceof Error ? e.message : e);
       return fallbackMergeProfiles(sources);
     }
   }

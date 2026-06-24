@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
         template,
         content: result.content as object,
         htmlContent: result.htmlContent,
-        aiModel: aiService.engine === "gemini" ? "gemini-flash-latest" : "local-fallback",
+        aiModel: aiService.modelName,
       },
     });
 

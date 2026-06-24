@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
         title: `Cover Letter — ${job.title} at ${job.company}`,
         content: result.content,
         tone: result.tone,
-        aiModel: aiService.engine === "gemini" ? "gemini-flash-latest" : "local-fallback",
+        aiModel: aiService.modelName,
       },
     });
 
