@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
-import { Settings, Key, Plus, Trash2, Shield, Lock, Bot } from "lucide-react";
+import { Settings, Key, Plus, Trash2, Shield, Lock, Bot, KeyRound } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/Loading";
 
 interface Credential {
@@ -20,6 +20,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ portalName: "", portalUrl: "", username: "", password: "" });
   const [ai, setAi] = useState<{ engine: string; model: string } | null>(null);
+  const [pw, setPw] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [changingPw, setChangingPw] = useState(false);
 
   const load = async () => {
     try {
@@ -73,6 +75,43 @@ export default function SettingsPage() {
     await fetch(`/api/credentials?id=${id}`, { method: "DELETE" });
     toast.success("Deleted");
     load();
+  };
+
+  const changePassword = async () => {
+    if (!pw.currentPassword || !pw.newPassword) {
+      toast.error("Fill in your current and new password");
+      return;
+    }
+    if (pw.newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters");
+      return;
+    }
+    if (pw.newPassword !== pw.confirmPassword) {
+      toast.error("New passwords don't match");
+      return;
+    }
+    setChangingPw(true);
+    try {
+      const res = await fetch("/api/account/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: pw.currentPassword,
+          newPassword: pw.newPassword,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success("Password updated");
+        setPw({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      } else {
+        toast.error(data.error || "Failed to update password");
+      }
+    } catch {
+      toast.error("Failed to update password");
+    } finally {
+      setChangingPw(false);
+    }
   };
 
   return (
@@ -134,6 +173,53 @@ export default function SettingsPage() {
           <code className="text-brand-400">.env</code> file (or hosting secrets) and restart the
           server. Force a provider with <code className="text-brand-400">AI_PROVIDER=claude</code>.
         </p>
+      </motion.div>
+
+      {/* Change password */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6 mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <KeyRound size={18} className="text-brand-400" /> Change Password
+          </h2>
+          <span className="flex items-center gap-1.5 text-xs text-green-400">
+            <Lock size={12} /> scrypt hashed
+          </span>
+        </div>
+        <p className="text-sm text-slate-400 mb-5">
+          Update your account password. You&apos;ll need your current password to confirm.
+        </p>
+
+        <div className="space-y-3">
+          <input
+            className="input"
+            type="password"
+            autoComplete="current-password"
+            placeholder="Current password"
+            value={pw.currentPassword}
+            onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })}
+          />
+          <div className="grid md:grid-cols-2 gap-3">
+            <input
+              className="input"
+              type="password"
+              autoComplete="new-password"
+              placeholder="New password (min 8 chars)"
+              value={pw.newPassword}
+              onChange={(e) => setPw({ ...pw, newPassword: e.target.value })}
+            />
+            <input
+              className="input"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Confirm new password"
+              value={pw.confirmPassword}
+              onChange={(e) => setPw({ ...pw, confirmPassword: e.target.value })}
+            />
+          </div>
+        </div>
+        <button onClick={changePassword} disabled={changingPw} className="btn-primary w-full mt-4">
+          {changingPw ? <LoadingSpinner /> : <KeyRound size={18} />} Update Password
+        </button>
       </motion.div>
 
       {/* Portal credentials */}

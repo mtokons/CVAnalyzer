@@ -67,3 +67,26 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # ── Gmail application-tracking OAuth (OPTIONAL) ───────────────────────────
+  # Enables auto-import of employer email replies into the Applications tracker.
+  # Until these secrets exist the feature degrades gracefully (the UI shows
+  # "Gmail auto-import isn't configured" and never breaks).
+  #
+  # To enable, in Google Cloud Console: enable the Gmail API, create an OAuth
+  # 2.0 Web client, add the `gmail.readonly` scope on the consent screen, add
+  # this redirect URI:
+  #   https://sccg--cvanalyzer-173fb.europe-west4.hosted.app/api/gmail/callback
+  # add your testers as "Test users", then create the secrets and UNCOMMENT:
+  #   firebase apphosting:secrets:set GOOGLE_CLIENT_ID
+  #   firebase apphosting:secrets:set GOOGLE_CLIENT_SECRET
+  #
+  # - variable: GOOGLE_CLIENT_ID
+  #   secret: GOOGLE_CLIENT_ID
+  #   availability:
+  #     - RUNTIME
+  #
+  # - variable: GOOGLE_CLIENT_SECRET
+  #   secret: GOOGLE_CLIENT_SECRET
+  #   availability:
+  #     - RUNTIME
