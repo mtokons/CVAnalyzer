@@ -2,6 +2,7 @@ import type { NextAuthConfig } from "next-auth";
 
 const PROTECTED_PREFIXES = [
   "/dashboard",
+  "/insights",
   "/profile",
   "/jobs",
   "/cv",

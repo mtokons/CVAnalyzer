@@ -18,11 +18,13 @@ import {
   ShieldCheck,
   LayoutTemplate,
   Inbox,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/insights", label: "Insights", icon: TrendingUp },
   { href: "/profile", label: "My Profile", icon: User },
   { href: "/jobs", label: "Job Tracker", icon: Briefcase },
   { href: "/templates", label: "CV Templates", icon: LayoutTemplate },
