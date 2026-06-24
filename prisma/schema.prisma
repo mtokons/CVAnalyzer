@@ -34,6 +34,8 @@ model User {
   credentials   PortalCredential[]
   sessions      Session[]
   accounts      Account[]
+  gmailAccount  GmailAccount?
+  emails        EmailMessage[]
 }
 
 model Account {
@@ -78,6 +80,8 @@ model Profile {
   linkedin    String?
   github      String?
   summary     String?  @db.Text
+
+  preferredTemplate String? @default("berlin-modern")
 
   experience     Json  @default("[]")
   education      Json  @default("[]")
@@ -158,6 +162,7 @@ model Job {
   cvDocuments     CVDocument[]
   coverLetters    CoverLetter[]
   application     Application?
+  emails          EmailMessage[]
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -262,4 +267,55 @@ model PortalCredential {
   updatedAt   DateTime  @updatedAt
 
   @@unique([userId, portalName])
+}
+
+// ─── Gmail Connection & Email Tracking ────────────────────────────────────────
+
+model GmailAccount {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  email        String
+  accessToken  String    @db.Text // AES-256-GCM encrypted
+  refreshToken String    @db.Text // AES-256-GCM encrypted
+  expiryDate   DateTime?
+  scope        String?
+  lastSyncedAt DateTime?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model EmailMessage {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId          String?
+  job            Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  gmailId        String    @unique
+  threadId       String?
+  fromEmail      String?
+  fromName       String?
+  toEmail        String?
+  subject        String?   @db.Text
+  snippet        String?   @db.Text
+  receivedAt     DateTime?
+
+  category       EmailCategory @default(OTHER)
+  isFromEmployer Boolean   @default(false)
+
+  createdAt      DateTime  @default(now())
+
+  @@index([userId])
+  @@index([jobId])
+}
+
+enum EmailCategory {
+  INTERVIEW
+  OFFER
+  REJECTION
+  ACKNOWLEDGEMENT
+  OTHER
 }

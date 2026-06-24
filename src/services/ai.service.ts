@@ -19,6 +19,11 @@ import {
   fallbackCoverLetter,
   fallbackMergeProfiles,
 } from "./ai-fallback";
+import {
+  GERMAN_CV_TEMPLATES,
+  buildAllTemplateStyles,
+  DEFAULT_TEMPLATE_ID,
+} from "@/lib/cv-templates";
 
 // Types
 export interface ProfileData {
@@ -128,116 +133,13 @@ export interface CoverLetterResult {
 // Every theme uses standard fonts and selectable text so the result stays
 // ATS-friendly when printed or exported.
 
-export const CV_TEMPLATES = [
-  { id: "modern", name: "Modern", description: "Blue accents, bold headings" },
-  { id: "classic", name: "Classic", description: "Serif, centered, traditional" },
-  { id: "minimal", name: "Minimal", description: "Monochrome, clean, spacious" },
-] as const;
+export const CV_TEMPLATES = GERMAN_CV_TEMPLATES.map((t) => ({
+  id: t.id,
+  name: t.name,
+  description: t.description,
+}));
 
-const CV_TEMPLATE_STYLES: Record<string, string> = {
-  modern: `
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 10pt; color: #1a1a1a; background: white; }
-    .cv-container { max-width: 800px; margin: 0 auto; padding: 32px; }
-    .header { border-bottom: 3px solid #2c37ed; padding-bottom: 16px; margin-bottom: 20px; }
-    .name { font-size: 26pt; font-weight: 700; color: #151652; letter-spacing: -0.5px; }
-    .title { font-size: 12pt; color: #4157f8; font-weight: 500; margin-top: 4px; }
-    .contact { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 9pt; color: #555; }
-    .contact span { display: flex; align-items: center; gap: 4px; }
-    .section { margin-bottom: 18px; }
-    .section-title { font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #2c37ed; border-bottom: 1px solid #dde6ff; padding-bottom: 4px; margin-bottom: 10px; }
-    .summary { font-size: 10pt; line-height: 1.6; color: #333; }
-    .experience-item { margin-bottom: 12px; }
-    .exp-header { display: flex; justify-content: space-between; align-items: flex-start; }
-    .exp-title { font-weight: 700; font-size: 10.5pt; }
-    .exp-company { color: #4157f8; font-weight: 600; }
-    .exp-date { font-size: 9pt; color: #666; white-space: nowrap; }
-    .exp-location { font-size: 9pt; color: #888; }
-    .exp-description { font-size: 9.5pt; line-height: 1.5; margin-top: 5px; color: #333; }
-    .achievements { margin-top: 5px; padding-left: 16px; }
-    .achievements li { font-size: 9.5pt; line-height: 1.5; margin-bottom: 2px; }
-    .tech-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-    .tech-tag { background: #f0f4ff; color: #2c37ed; padding: 2px 8px; border-radius: 12px; font-size: 8.5pt; }
-    .skills-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-    .skill-badge { background: #f0f4ff; color: #2428d2; padding: 4px 12px; border-radius: 16px; font-size: 9pt; border: 1px solid #c0cfff; }
-    .edu-item { margin-bottom: 10px; }
-    .edu-degree { font-weight: 700; }
-    .edu-institution { color: #4157f8; }
-    .cert-item { margin-bottom: 6px; font-size: 9.5pt; }
-    @media print {
-      body { font-size: 9pt; }
-      .cv-container { padding: 20px; max-width: 100%; }
-    }
-  `,
-  classic: `
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Georgia', 'Times New Roman', serif; font-size: 10.5pt; color: #222; background: white; }
-    .cv-container { max-width: 800px; margin: 0 auto; padding: 36px 40px; }
-    .header { text-align: center; border-bottom: 2px solid #222; padding-bottom: 14px; margin-bottom: 20px; }
-    .name { font-size: 24pt; font-weight: 700; color: #111; letter-spacing: 1px; }
-    .title { font-size: 12pt; color: #444; font-style: italic; margin-top: 4px; }
-    .contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 10px; font-size: 9pt; color: #555; }
-    .contact span { display: flex; align-items: center; gap: 4px; }
-    .section { margin-bottom: 18px; }
-    .section-title { font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #111; border-bottom: 1px solid #999; padding-bottom: 3px; margin-bottom: 10px; }
-    .summary { font-size: 10.5pt; line-height: 1.6; color: #333; text-align: justify; }
-    .experience-item { margin-bottom: 12px; }
-    .exp-header { display: flex; justify-content: space-between; align-items: flex-start; }
-    .exp-title { font-weight: 700; font-size: 11pt; }
-    .exp-company { font-style: italic; color: #444; }
-    .exp-date { font-size: 9pt; color: #666; white-space: nowrap; }
-    .exp-location { font-size: 9pt; color: #777; }
-    .exp-description { font-size: 10pt; line-height: 1.5; margin-top: 5px; color: #333; }
-    .achievements { margin-top: 5px; padding-left: 18px; }
-    .achievements li { font-size: 10pt; line-height: 1.5; margin-bottom: 2px; }
-    .tech-tags { margin-top: 6px; font-size: 9pt; color: #555; }
-    .tech-tag:not(:last-child)::after { content: ' \\00b7 '; }
-    .skills-grid { font-size: 10pt; line-height: 1.7; color: #333; }
-    .skill-badge:not(:last-child)::after { content: ' \\2022 '; color: #999; }
-    .edu-item { margin-bottom: 10px; }
-    .edu-degree { font-weight: 700; }
-    .edu-institution { font-style: italic; color: #444; }
-    .cert-item { margin-bottom: 6px; font-size: 10pt; }
-    @media print {
-      body { font-size: 10pt; }
-      .cv-container { padding: 20px; max-width: 100%; }
-    }
-  `,
-  minimal: `
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Helvetica Neue', 'Arial', sans-serif; font-size: 10pt; color: #2b2b2b; background: white; }
-    .cv-container { max-width: 780px; margin: 0 auto; padding: 40px; }
-    .header { padding-bottom: 18px; margin-bottom: 22px; border-bottom: 1px solid #e5e5e5; }
-    .name { font-size: 24pt; font-weight: 300; color: #111; letter-spacing: 2px; text-transform: uppercase; }
-    .title { font-size: 11pt; color: #888; font-weight: 400; margin-top: 6px; letter-spacing: 0.5px; }
-    .contact { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; font-size: 8.5pt; color: #888; }
-    .contact span { display: flex; align-items: center; gap: 4px; }
-    .section { margin-bottom: 20px; }
-    .section-title { font-size: 9pt; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: #aaa; margin-bottom: 10px; }
-    .summary { font-size: 10pt; line-height: 1.7; color: #444; }
-    .experience-item { margin-bottom: 14px; }
-    .exp-header { display: flex; justify-content: space-between; align-items: flex-start; }
-    .exp-title { font-weight: 600; font-size: 10.5pt; color: #111; }
-    .exp-company { color: #666; font-weight: 400; }
-    .exp-date { font-size: 8.5pt; color: #aaa; white-space: nowrap; }
-    .exp-location { font-size: 8.5pt; color: #aaa; }
-    .exp-description { font-size: 9.5pt; line-height: 1.6; margin-top: 4px; color: #555; }
-    .achievements { margin-top: 5px; padding-left: 16px; list-style: none; }
-    .achievements li { font-size: 9.5pt; line-height: 1.6; margin-bottom: 2px; color: #555; position: relative; padding-left: 12px; }
-    .achievements li::before { content: '\\2014'; position: absolute; left: 0; color: #bbb; }
-    .tech-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-    .tech-tag { color: #999; font-size: 8.5pt; }
-    .skills-grid { display: flex; flex-wrap: wrap; gap: 8px 16px; }
-    .skill-badge { font-size: 9.5pt; color: #444; }
-    .edu-item { margin-bottom: 10px; }
-    .edu-degree { font-weight: 600; color: #111; }
-    .edu-institution { color: #666; }
-    .cert-item { margin-bottom: 6px; font-size: 9.5pt; color: #555; }
-    @media print {
-      .cv-container { padding: 24px; max-width: 100%; }
-    }
-  `,
-};
+const CV_TEMPLATE_STYLES: Record<string, string> = buildAllTemplateStyles();
 
 // ─── AI Service Class ─────────────────────────────────────────────────────────
 
@@ -541,7 +443,7 @@ Return ONLY valid JSON.`;
     profile: ProfileData,
     job: JobDetails,
     atsAnalysis: { matchedSkills: string[]; missingSkills: string[]; keywords: string[] },
-    template: string = "modern"
+    template: string = DEFAULT_TEMPLATE_ID
   ): Promise<CVGenerationResult> {
     if (!this.isLive()) {
       const tailored = fallbackTailorProfile(profile, job);
@@ -726,14 +628,19 @@ Return ONLY valid JSON.`;
 
   // ─── HTML CV Template ─────────────────────────────────────────────────────
 
-  private generateCVHTML(profile: ProfileData, job?: JobDetails, template: string = "modern"): string {
+  /** Public helper to render a profile into themed CV HTML (used for previews). */
+  renderCVHTML(profile: ProfileData, template: string = DEFAULT_TEMPLATE_ID, job?: JobDetails): string {
+    return this.generateCVHTML(profile, job, template);
+  }
+
+  private generateCVHTML(profile: ProfileData, job?: JobDetails, template: string = DEFAULT_TEMPLATE_ID): string {
     const skills = (profile.skills || []).slice(0, 20);
     const experience = profile.experience || [];
     const education = profile.education || [];
     const certifications = profile.certifications || [];
     const projects = profile.projects || [];
 
-    const styles = CV_TEMPLATE_STYLES[template] ?? CV_TEMPLATE_STYLES.modern;
+    const styles = CV_TEMPLATE_STYLES[template] ?? CV_TEMPLATE_STYLES[DEFAULT_TEMPLATE_ID];
 
     return `<!DOCTYPE html>
 <html lang="en">

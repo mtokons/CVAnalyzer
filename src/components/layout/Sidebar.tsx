@@ -16,6 +16,8 @@ import {
   Sparkles,
   LogOut,
   ShieldCheck,
+  LayoutTemplate,
+  Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,8 +25,10 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/profile", label: "My Profile", icon: User },
   { href: "/jobs", label: "Job Tracker", icon: Briefcase },
+  { href: "/templates", label: "CV Templates", icon: LayoutTemplate },
   { href: "/cv", label: "My CVs", icon: FileText },
   { href: "/cover-letters", label: "Cover Letters", icon: Mail },
+  { href: "/applications", label: "Tracking", icon: Inbox },
   { href: "/apply", label: "Auto Apply", icon: Zap },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const userId = await getUserId();
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await req.json();
-    const { jobId, template = "modern" } = body;
+    const { jobId, template = "berlin-modern" } = body;
 
     if (!jobId) {
       return NextResponse.json({ error: "jobId is required" }, { status: 400 });

@@ -79,9 +79,14 @@ export default function SignupPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="you@gmail.com"
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-white placeholder-slate-500 outline-none focus:border-brand-500"
             />
+            <p className="mt-1.5 text-xs text-slate-400">
+              Tip: use the same email you apply to jobs with —{" "}
+              <span className="font-medium text-brand-300">Gmail preferred</span> — so we can track
+              employer replies for you.
+            </p>
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-300">Password</label>

@@ -8,6 +8,8 @@ const PROTECTED_PREFIXES = [
   "/cover-letters",
   "/apply",
   "/settings",
+  "/templates",
+  "/applications",
   "/admin",
 ];
 

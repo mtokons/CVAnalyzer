@@ -57,7 +57,8 @@ export default function JobDetailPage() {
   const [generatingCL, setGeneratingCL] = useState(false);
   const [applying, setApplying] = useState(false);
   const [tone, setTone] = useState("professional");
-  const [template, setTemplate] = useState("modern");
+  const [template, setTemplate] = useState("berlin-modern");
+  const [templateOptions, setTemplateOptions] = useState<Array<{ id: string; name: string }>>([]);
   const [previewCV, setPreviewCV] = useState<string | null>(null);
 
   const loadJob = useCallback(async () => {
@@ -75,6 +76,19 @@ export default function JobDetailPage() {
   useEffect(() => {
     loadJob();
   }, [loadJob]);
+
+  useEffect(() => {
+    fetch("/api/templates")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setTemplateOptions(
+          (d.templates as Array<{ id: string; name: string }>).map((t) => ({ id: t.id, name: t.name }))
+        );
+        if (d.preferred) setTemplate(d.preferred);
+      })
+      .catch(() => {});
+  }, []);
 
   const generateCV = async () => {
     setGeneratingCV(true);
@@ -237,9 +251,15 @@ export default function JobDetailPage() {
                   className="input !py-2 !px-3 text-sm bg-slate-800 border-slate-700"
                   aria-label="CV template"
                 >
-                  <option value="modern">Modern</option>
-                  <option value="classic">Classic</option>
-                  <option value="minimal">Minimal</option>
+                  {templateOptions.length === 0 ? (
+                    <option value="berlin-modern">Berlin Modern</option>
+                  ) : (
+                    templateOptions.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))
+                  )}
                 </select>
                 <button onClick={generateCV} disabled={generatingCV} className="btn-primary !py-2 !px-4 text-sm">
                   {generatingCV ? <LoadingSpinner /> : <Sparkles size={16} />}
