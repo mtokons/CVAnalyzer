@@ -25,6 +25,16 @@ env:
     availability:
       - RUNTIME
 
+  # Canonical public URL of the deployed site. Without this, Auth.js (NextAuth)
+  # builds absolute redirect/callback URLs from Cloud Run's INTERNAL host
+  # (https://0.0.0.0:8080), which breaks post-login redirects. Needed at BUILD
+  # (middleware is compiled) and at RUNTIME (middleware redirects to /login).
+  - variable: AUTH_URL
+    value: https://sccg--cvanalyzer-173fb.europe-west4.hosted.app
+    availability:
+      - BUILD
+      - RUNTIME
+
   # Playwright browser automation cannot run on serverless/Cloud Run, so the
   # auto-fill feature degrades gracefully with a clear message. Everything else
   # (profiles, parsing, jobs, ATS, CV & cover-letter generation) works fully.

@@ -10,11 +10,25 @@ import toast from "react-hot-toast";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrlRaw = searchParams.get("callbackUrl") || "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Reduce any callbackUrl to a SAME-ORIGIN relative path. This both fixes the
+  // Cloud Run redirect bug (NextAuth may build the callbackUrl with the internal
+  // host like https://0.0.0.0:8080) and prevents open-redirects to other sites.
+  function safePath(raw: string): string {
+    const fallback = "/dashboard";
+    try {
+      const u = new URL(raw, window.location.origin);
+      const path = `${u.pathname}${u.search}`;
+      return path && path.startsWith("/") ? path : fallback;
+    } catch {
+      return raw.startsWith("/") && !raw.startsWith("//") ? raw : fallback;
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,7 +45,7 @@ function LoginForm() {
       return;
     }
     toast.success("Welcome back!");
-    router.push(callbackUrl);
+    router.push(safePath(callbackUrlRaw));
     router.refresh();
   }
 
