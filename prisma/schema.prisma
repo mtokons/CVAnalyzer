@@ -36,6 +36,32 @@ model User {
   accounts      Account[]
   gmailAccount  GmailAccount?
   emails        EmailMessage[]
+  activityLogs  ActivityLog[]
+}
+
+// ─── Activity Log (Admin Audit Trail) ────────────────────────────────────────
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  email     String?  // attempted/affected email (kept even if user is deleted or never existed)
+  action    String   // LOGIN_SUCCESS | LOGIN_FAILED | LOGOUT | REGISTER | PASSWORD_CHANGED | ERROR | ...
+  category  String   @default("AUTH") // AUTH | ACCOUNT | ERROR | ADMIN | SYSTEM
+  status    String   @default("SUCCESS") // SUCCESS | FAILURE
+  message   String?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([action])
+  @@index([category])
+  @@index([status])
+  @@index([email])
 }
 
 model Account {

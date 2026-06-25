@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
-import { ShieldCheck, Users, Briefcase, FileText, Mail, Trash2 } from "lucide-react";
+import { ShieldCheck, Users, Briefcase, FileText, Mail, Trash2, Activity } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/Loading";
+import { ActivityLog } from "./ActivityLog";
 
 interface AdminUser {
   id: string;
@@ -34,6 +35,7 @@ export function AdminDashboard({
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"users" | "activity">("users");
 
   const load = async () => {
     try {
@@ -129,6 +131,35 @@ export function AdminDashboard({
         })}
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 rounded-xl border border-slate-800 bg-slate-900 p-1">
+        <button
+          onClick={() => setTab("users")}
+          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+            tab === "users"
+              ? "bg-brand-600 text-white"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          Users
+        </button>
+        <button
+          onClick={() => setTab("activity")}
+          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
+            tab === "activity"
+              ? "bg-brand-600 text-white"
+              : "text-slate-400 hover:text-white"
+          }`}
+        >
+          <Activity className="h-4 w-4" />
+          Activity Log
+        </button>
+      </div>
+
+      {tab === "activity" ? (
+        <ActivityLog />
+      ) : (
       <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-800 text-xs uppercase text-slate-500">
@@ -199,6 +230,7 @@ export function AdminDashboard({
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

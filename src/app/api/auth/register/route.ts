@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/password";
+import { logActivity, clientInfoFromHeaders } from "@/lib/activity";
 
 // POST /api/auth/register — create a new account
 export async function POST(req: NextRequest) {
@@ -34,9 +35,27 @@ export async function POST(req: NextRequest) {
       select: { id: true, email: true, name: true },
     });
 
+    await logActivity({
+      action: "REGISTER",
+      category: "AUTH",
+      status: "SUCCESS",
+      userId: user.id,
+      email,
+      message: "Account created",
+      ...clientInfoFromHeaders(req.headers),
+    });
+
     return NextResponse.json({ success: true, user }, { status: 201 });
   } catch (error) {
     console.error("POST /api/auth/register error:", error);
+    await logActivity({
+      action: "ERROR",
+      category: "ERROR",
+      status: "FAILURE",
+      message: "Registration failed",
+      metadata: { route: "/api/auth/register", error: String(error) },
+      ...clientInfoFromHeaders(req.headers),
+    });
     return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
   }
 }

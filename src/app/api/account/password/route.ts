@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserId } from "@/lib/session";
 import { hashPassword, verifyPassword } from "@/lib/password";
+import { logActivity, clientInfoFromHeaders } from "@/lib/activity";
 
 export const runtime = "nodejs";
 
@@ -48,6 +49,15 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await hashPassword(newPassword);
   await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+
+  await logActivity({
+    action: "PASSWORD_CHANGED",
+    category: "ACCOUNT",
+    status: "SUCCESS",
+    userId,
+    message: "Password changed",
+    ...clientInfoFromHeaders(req.headers),
+  });
 
   return NextResponse.json({ success: true });
 }
