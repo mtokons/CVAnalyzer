@@ -23,7 +23,7 @@ interface Stats {
   coverLetters: number;
 }
 
-const ROLES = ["USER", "ADMIN", "SUPER_ADMIN"];
+const ROLES = ["MEMBER", "EMPLOYER", "ADMIN", "SUPER_ADMIN"];
 
 export function AdminDashboard({
   isSuperAdmin,
@@ -175,6 +175,7 @@ export function AdminDashboard({
           <tbody>
             {users.map((u) => {
               const isSelf = u.id === currentUserId;
+              const isOwner = u.email.trim().toLowerCase() === "mhasnainn@gmail.com";
               return (
                 <tr key={u.id} className="border-b border-slate-800/60 last:border-0">
                   <td className="px-4 py-3">
@@ -182,7 +183,7 @@ export function AdminDashboard({
                     <p className="text-xs text-slate-500">{u.email}</p>
                   </td>
                   <td className="px-4 py-3">
-                    {isSuperAdmin && !isSelf ? (
+                    {isSuperAdmin && !isSelf && !isOwner ? (
                       <select
                         value={u.role}
                         onChange={(e) => changeRole(u.id, e.target.value)}
@@ -213,7 +214,7 @@ export function AdminDashboard({
                   <td className="px-4 py-3 text-center text-slate-300">{u._count.coverLetters}</td>
                   {isSuperAdmin && (
                     <td className="px-4 py-3 text-right">
-                      {!isSelf && (
+                      {!isSelf && !isOwner ? (
                         <button
                           onClick={() => deleteUser(u.id, u.email)}
                           className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-red-400 hover:bg-red-500/10"
@@ -221,7 +222,9 @@ export function AdminDashboard({
                           <Trash2 className="h-3.5 w-3.5" />
                           Delete
                         </button>
-                      )}
+                      ) : isOwner ? (
+                        <span className="text-xs text-brand-400">Owner</span>
+                      ) : null}
                     </td>
                   )}
                 </tr>

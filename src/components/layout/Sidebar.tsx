@@ -19,6 +19,7 @@ import {
   LayoutTemplate,
   Inbox,
   TrendingUp,
+  FolderKanban,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +49,11 @@ export function Sidebar({
   const initial = (user?.name || user?.email || "?").charAt(0).toUpperCase();
 
   const items = isAdmin
-    ? [...navItems, { href: "/admin", label: "Admin", icon: ShieldCheck }]
+    ? [
+        ...navItems,
+        { href: "/projects", label: "Project Mgmt", icon: FolderKanban },
+        { href: "/admin", label: "Admin", icon: ShieldCheck },
+      ]
     : navItems;
 
   return (

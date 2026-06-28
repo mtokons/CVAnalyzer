@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { VALID_ROLES, ROLES, isOwnerEmail } from "@/lib/roles";
 
 export const runtime = "nodejs";
-
-const VALID_ROLES = ["USER", "ADMIN", "SUPER_ADMIN"];
 
 async function requireSuperAdmin() {
   const session = await auth();
@@ -25,12 +24,20 @@ export async function PATCH(
   const body = await req.json().catch(() => ({}));
   const role = body.role as string | undefined;
 
-  if (!role || !VALID_ROLES.includes(role)) {
+  if (!role || !VALID_ROLES.includes(role as never)) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
   }
   if (id === actor.id) {
     return NextResponse.json(
       { error: "You cannot change your own role" },
+      { status: 400 }
+    );
+  }
+
+  const target = await prisma.user.findUnique({ where: { id }, select: { email: true } });
+  if (isOwnerEmail(target?.email) && role !== ROLES.SUPER_ADMIN) {
+    return NextResponse.json(
+      { error: "The platform owner must remain Super Admin" },
       { status: 400 }
     );
   }
@@ -56,6 +63,14 @@ export async function DELETE(
   if (id === actor.id) {
     return NextResponse.json(
       { error: "You cannot delete your own account" },
+      { status: 400 }
+    );
+  }
+
+  const target = await prisma.user.findUnique({ where: { id }, select: { email: true } });
+  if (isOwnerEmail(target?.email)) {
+    return NextResponse.json(
+      { error: "The platform owner account cannot be deleted" },
       { status: 400 }
     );
   }
