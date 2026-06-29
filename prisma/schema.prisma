@@ -39,6 +39,8 @@ model User {
   activityLogs  ActivityLog[]
   ownedProjects Project[]      @relation("ProjectOwner")
   partnerProjects Project[]    @relation("ProjectPartner")
+  posts         Post[]
+  comments      PostComment[]
 }
 
 // ─── Activity Log (Admin Audit Trail) ────────────────────────────────────────
@@ -111,6 +113,11 @@ model Profile {
 
   preferredTemplate String? @default("berlin-modern")
 
+  // Public sharing: profile is public unless isPublic=false. privateFields lists
+  // which field keys are hidden from other users (e.g. ["phone","email"]).
+  isPublic      Boolean @default(true)
+  privateFields Json    @default("[]")
+
   experience     Json  @default("[]")
   education      Json  @default("[]")
   skills         Json  @default("[]")
@@ -126,6 +133,34 @@ model Profile {
 }
 
 // ─── Profile Source ───────────────────────────────────────────────────────────
+
+// ─── Community Timeline (Posts & Comments) ───────────────────────────────────
+
+model Post {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String        @db.Text
+  imageData String?       @db.Text // compressed base64 data URL
+  comments  PostComment[]
+  createdAt DateTime      @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model PostComment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String   @db.Text
+  imageData String?  @db.Text // compressed base64 data URL
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+}
 
 model ProfileSource {
   id          String      @id @default(cuid())

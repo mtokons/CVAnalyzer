@@ -59,6 +59,8 @@ interface Profile {
   education?: Education[];
   skills?: string[];
   sources?: ProfileSource[];
+  isPublic?: boolean;
+  privateFields?: string[];
 }
 
 export default function ProfilePage() {
@@ -85,6 +87,20 @@ export default function ProfilePage() {
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+
+  const updateVisibility = useCallback(async (isPublic: boolean, privateFields: string[]) => {
+    setProfile((prev) => ({ ...prev, isPublic, privateFields }));
+    try {
+      await fetch("/api/profile/visibility", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPublic, privateFields }),
+      });
+    } catch {
+      toast.error("Failed to update sharing");
+    }
+  }, []);
+
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -215,6 +231,43 @@ export default function ProfilePage() {
         <button onClick={handleSave} disabled={saving} className="btn-primary">
           {saving ? <LoadingSpinner /> : <Save size={18} />} Save Profile
         </button>
+      </div>
+
+      {/* Public sharing */}
+      <div className="glass-card p-6 mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold text-white">Public profile</h2>
+            <p className="text-sm text-slate-400">Everything is public unless you mark fields private.</p>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={profile.isPublic !== false}
+              onChange={(e) => updateVisibility(e.target.checked, profile.privateFields || [])}
+            />
+            {profile.isPublic !== false ? "Visible to others" : "Hidden"}
+          </label>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {["email", "phone", "location", "website", "linkedin", "github", "experience", "education", "certifications", "awards", "publications"].map((f) => {
+            const hidden = (profile.privateFields || []).includes(f);
+            return (
+              <button
+                key={f}
+                onClick={() =>
+                  updateVisibility(
+                    profile.isPublic !== false,
+                    hidden ? (profile.privateFields || []).filter((x) => x !== f) : [...(profile.privateFields || []), f]
+                  )
+                }
+                className={`rounded-full px-3 py-1 text-xs ${hidden ? "bg-slate-700 text-slate-400" : "bg-brand-600/30 text-brand-200"}`}
+              >
+                {hidden ? "🔒 " : ""}{f}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Import sources */}

@@ -20,12 +20,15 @@ import {
   Inbox,
   TrendingUp,
   FolderKanban,
+  Users,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/insights", label: "Insights", icon: TrendingUp },
+  { href: "/feed", label: "Community", icon: Users },
   { href: "/profile", label: "My Profile", icon: User },
   { href: "/jobs", label: "Job Tracker", icon: Briefcase },
   { href: "/templates", label: "CV Templates", icon: LayoutTemplate },
@@ -33,6 +36,7 @@ const navItems = [
   { href: "/cover-letters", label: "Cover Letters", icon: Mail },
   { href: "/applications", label: "Tracking", icon: Inbox },
   { href: "/apply", label: "Auto Apply", icon: Zap },
+  { href: "/activity", label: "My Activity", icon: Activity },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
